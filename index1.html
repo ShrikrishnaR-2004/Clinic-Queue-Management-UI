@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clinic Queue • Real-time Token Management</title>
+  <style>
+    :root{
+      --bg0:#0b1020;
+      --bg1:#0f1730;
+      --card: rgba(255,255,255,0.08);
+      --stroke: rgba(255,255,255,0.12);
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,0.72);
+      --muted2: rgba(234,240,255,0.55);
+      --primary:#6b7bff;
+      --primary2:#a16bff;
+      --good:#38d996;
+      --warn:#ffd166;
+      --info:#4cc9f0;
+      --bad:#ff5c77;
+      --shadow: 0 22px 60px rgba(0,0,0,0.40);
+      --radius: 18px;
+    }
+
+    [data-theme="light"]{
+      --bg0:#f5f7ff;
+      --bg1:#eef2ff;
+      --card: rgba(10,25,60,0.06);
+      --stroke: rgba(10,25,60,0.12);
+      --text:#0c1630;
+      --muted: rgba(12,22,48,0.70);
+      --muted2: rgba(12,22,48,0.55);
+      --shadow: 0 22px 60px rgba(10,25,60,0.14);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(1000px 550px at 20% 15%, rgba(107,123,255,0.35), transparent 60%),
+        radial-gradient(900px 540px at 85% 20%, rgba(161,107,255,0.30), transparent 60%),
+        radial-gradient(900px 560px at 50% 100%, rgba(76,201,240,0.18), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      color: var(--text);
+    }
+
+    .wrap{
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 22px 16px 44px;
+    }
+
+    .topbar{
+      display:flex;
+      gap:14px;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 18px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.05));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 10px;
+      z-index: 10;
+      margin-bottom: 18px;
+    }
+
+    .brand{
+      display:flex; gap:12px; align-items:center;
+      min-width: 200px;
+    }
+    .logo{
+      width: 44px; height: 44px;
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.25), transparent 55%),
+        linear-gradient(135deg, var(--primary), var(--primary2));
+      box-shadow: 0 18px 35px rgba(107,123,255,0.25);
+      border: 1px solid rgba(255,255,255,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .brand h1{margin:0; font-size: 16px; letter-spacing: 0.3px; font-weight: 800;}
+    .brand p{margin:2px 0 0; font-size: 12px; color: var(--muted)}
+
+    .controls{
+      display:flex; align-items:center; gap:10px; flex-wrap: wrap;
+    }
+
+    .pill{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.06);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+      font-weight: 700;
+    }
+
+    .btn{
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 11px 16px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.18);}
+    .btn:active{transform: translateY(0px);}
+    .btn.primary{
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      border-color: rgba(255,255,255,0.20);
+      box-shadow: 0 16px 30px rgba(107,123,255,0.22);
+    }
+    .btn.good{background: rgba(56,217,150,0.15); border-color: rgba(56,217,150,0.35); color: var(--good);}
+    .btn.bad{background: rgba(255,92,119,0.15); border-color: rgba(255,92,119,0.35); color: var(--bad);}
+    .btn.ghost{background: transparent;}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr;}
+      .brand{min-width:auto}
+      .controls{justify-content: flex-start;}
+    }
+
+    .card{
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding: 18px 20px 14px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 10px;
+      border-bottom: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.04);
+    }
+    .card .hd h2{margin:0; font-size: 15px; font-weight: 800;}
+    .card .hd .sub{margin:4px 0 0; font-size: 12px; color: var(--muted)}
+    .card .bd{padding: 20px}
+
+    .tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap: wrap;
+      padding: 10px;
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.05);
+    }
+    .tab{
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 13px;
+      background: transparent;
+      transition: all 0.15s ease;
+    }
+    .tab.active{
+      color: var(--text);
+      border-color: rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .row{display:flex; gap:10px; flex-wrap: wrap;}
+    .row > *{flex: 1 1 180px;}
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .label{font-size: 12px; color: var(--muted); font-weight: 700;}
+    input, select{
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      outline:none;
+      font-weight: 700;
+      font-size: 14px;
+      transition: border-color 0.2s ease;
+    }
+    input:focus, select:focus{border-color: var(--primary);}
+    input::placeholder{color: rgba(234,240,255,0.45)}
+    [data-theme="light"] input::placeholder{color: rgba(12,22,48,0.45)}
+
+    .divider{height: 1px; background: var(--stroke); margin: 18px 0;}
+    .muted{color: var(--muted); font-size: 12px}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;}
+
+    .bigToken{
+      padding: 20px;
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: radial-gradient(800px 240px at 20% 10%, rgba(107,123,255,0.25), transparent 60%),
+                  radial-gradient(680px 220px at 80% 0%, rgba(161,107,255,0.18), transparent 58%),
+                  rgba(255,255,255,0.05);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 16px;
+      position:relative;
+      overflow:hidden;
+    }
+    .bigToken:before{
+      content:"";
+      position:absolute;
+      inset:-30px;
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 60%);
+      filter: blur(8px);
+      opacity: .7;
+      pointer-events:none;
+    }
+    .bigToken .n{
+      font-size: 52px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      margin: 0;
+      position:relative;
+    }
+    .bigToken .meta{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      align-items:flex-end;
+      text-align:right;
+    }
+
+    .badge{
+      display:inline-flex;
+      gap: 8px;
+      align-items:center;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      background: rgba(255,255,255,0.06);
+    }
+    .badge.good{border-color: rgba(56,217,150,0.35); background: rgba(56,217,150,0.14); color: var(--good);}
+    .badge.warn{border-color: rgba(255,209,102,0.35); background: rgba(255,209,102,0.14); color: var(--warn);}
+    .badge.info{border-color: rgba(76,201,240,0.35); background: rgba(76,201,240,0.14); color: var(--info);}
+    .badge.bad{border-color: rgba(255,92,119,0.35); background: rgba(255,92,119,0.14); color: var(--bad);}
+
+    .pulse{
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{transform: scale(1); opacity:1}
+      50%{transform: scale(1.02); opacity:0.85}
+    }
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      max-height: 380px;
+      overflow:auto;
+      padding-right: 2px;
+    }
+    .item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.05);
+      transition: background 0.2s ease;
+    }
+    .item:hover{background: rgba(255,255,255,0.08);}
+    .item .left{display:flex; flex-direction:column; gap: 3px;}
+    .item .t{font-size: 14px; font-weight: 900}
+    .item .s{font-size: 12px; color: var(--muted)}
+    .item .right{display:flex; align-items:center; gap: 8px; flex-wrap: wrap;}
+
+    .toastWrap{
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      z-index: 50;
+      max-width: 420px;
+    }
+    .toast{
+      border: 1px solid var(--stroke);
+      background: rgba(10,14,30,0.85);
+      backdrop-filter: blur(12px);
+      color: var(--text);
+      padding: 14px;
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+      animation: toastIn .18s ease-out;
+    }
+    [data-theme="light"] .toast{background: rgba(255,255,255,0.88)}
+    @keyframes toastIn{
+      from{transform: translateY(8px); opacity:0}
+      to{transform: translateY(0); opacity:1}
+    }
+    .dot{
+      width: 10px; height: 10px; border-radius: 50%;
+      margin-top: 5px;
+      background: var(--info);
+      flex: 0 0 auto;
+      box-shadow: 0 0 0 6px rgba(76,201,240,0.12);
+    }
+    .dot.good{background: var(--good); box-shadow: 0 0 0 6px rgba(56,217,150,0.12);}
+    .dot.warn{background: var(--warn); box-shadow: 0 0 0 6px rgba(255,209,102,0.12);}
+    .dot.bad{background: var(--bad); box-shadow: 0 0 0 6px rgba(255,92,119,0.12);}
+
+    .footer{
+      margin-top: 18px;
+      color: var(--muted2);
+      font-size: 12px;
+      text-align:center;
+    }
+
+    .kbd{
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 8px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.06);
+      font-weight: 800;
+      color: var(--muted);
+      font-family: ui-monospace, monospace;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap" id="app">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">🏥</div>
+        <div>
+          <h1>Clinic Queue System</h1>
+          <p>Real-time token management</p>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="pill">
+          <span>⚡</span>
+          <b id="netState">Online</b>
+        </div>
+        <button class="btn ghost" id="themeBtn">🌓 Theme</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Left: User/Admin Panels -->
+      <div class="card">
+        <div class="hd">
+          <div>
+            <h2>Queue Management</h2>
+            <div class="sub">Get token or manage queue</div>
+          </div>
+          <div class="tabs" role="tablist">
+            <button class="tab active" id="tabUser" role="tab">👤 User</button>
+            <button class="tab" id="tabAdmin" role="tab">👨‍💼 Admin</button>
+          </div>
+        </div>
+
+        <div class="bd">
+          <!-- USER PANEL -->
+          <section id="userPanel">
+            <div class="row">
+              <div class="field">
+                <div class="label">Phone Number (E.164 format)</div>
+                <input id="userPhone" placeholder="+919876543210" type="tel" />
+              </div>
+            </div>
+
+            <div class="row">
+              <button class="btn primary" id="btnGetToken">🎫 Get Token</button>
+              <button class="btn" id="btnUserRefresh">🔄 Refresh Status</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="bigToken">
+              <div>
+                <div class="muted">Your Token</div>
+                <p class="n mono" id="userTokenNo">—</p>
+              </div>
+              <div class="meta">
+                <div class="badge warn" id="userBadge">PENDING</div>
+                <div class="muted">Queue position: <span class="mono" id="userPosition">—</span></div>
+                <div class="muted">Pending ahead: <span class="mono" id="pendingCount">—</span></div>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:12px;">
+              <button class="btn" id="btnCopyToken">📋 Copy Token</button>
+            </div>
+
+            <div class="footer">
+              💡 Tip: Phone format <span class="kbd">+91XXXXXXXXXX</span>. SNS sandbox: only verified numbers receive SMS.
+            </div>
+          </section>
+
+          <!-- ADMIN PANEL -->
+          <section id="adminPanel" style="display:none;">
+            <div class="row">
+              <div class="field">
+                <div class="label">Auto-refresh interval</div>
+                <select id="adminRefreshRate">
+                  <option value="0">Off</option>
+                  <option value="3000">Every 3s</option>
+                  <option value="5000" selected>Every 5s</option>
+                  <option value="10000">Every 10s</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="bigToken">
+              <div>
+                <div class="muted">Currently Calling</div>
+                <p class="n mono" id="callingToken">—</p>
+              </div>
+              <div class="meta">
+                <div class="badge info pulse" id="callingBadge">IDLE</div>
+                <div class="muted">Next in queue: <span class="mono" id="nextPending">—</span></div>
+                <div class="muted">Updated: <span class="mono" id="adminUpdated">—</span></div>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:14px;">
+              <button class="btn primary" id="btnCallNext">📢 Call Next</button>
+              <button class="btn good" id="btnMarkServed">✅ Mark Served</button>
+              <button class="btn" id="btnAdminRefresh">🔄 Refresh</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="row">
+              <div class="field">
+                <div class="label">Manual token update</div>
+                <input id="manualToken" placeholder="Token #" />
+              </div>
+              <div class="field">
+                <div class="label">Status</div>
+                <select id="manualStatus">
+                  <option value="CALLING">CALLING</option>
+                  <option value="SERVED">SERVED</option>
+                  <option value="PENDING">PENDING</option>
+                </select>
+              </div>
+              <div class="field" style="align-self:flex-end;">
+                <button class="btn" id="btnManualUpdate">Update</button>
+              </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div class="muted">📋 Pending Tokens</div>
+              <div class="badge warn" id="adminPendingBadge">0</div>
+            </div>
+
+            <div class="list" id="pendingList">
+              <div class="muted" style="text-align:center;padding:20px;">Click "Refresh" to load pending tokens</div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Right: Queue Statistics -->
+      <div class="card">
+        <div class="hd">
+          <div>
+            <h2>Queue Statistics</h2>
+            <div class="sub">Real-time insights</div>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="field">
+            <div class="label">Total Pending</div>
+            <div style="font-size:38px;font-weight:900;color:var(--warn);" id="statPending">0</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="field">
+            <div class="label">Estimated Wait Time (avg 5 min/token)</div>
+            <div style="font-size:28px;font-weight:900;color:var(--info);" id="statWait">0 min</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="field">
+            <div class="label">API Configuration</div>
+            <input id="apiBaseInput" placeholder="https://...execute-api.../$default" />
+            <button class="btn" id="btnSaveApi" style="margin-top:6px;">💾 Save API URL</button>
+          </div>
+
+          <div class="footer" style="margin-top:16px;">
+            Replace <span class="kbd">YOUR_API_ID</span> with your actual API Gateway ID from AWS Console.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toastWrap" id="toastWrap" aria-live="polite"></div>
+  </div>
+
+  <script>
+    /******************************************************************
+     * CONFIG - CHANGE THIS TO YOUR API GATEWAY URL
+     ******************************************************************/
+    const DEFAULT_API_BASE = "https://m1ff3pcz1j.execute-api.ap-south-1.amazonaws.com/";
+    const STORAGE_KEY = "clinicQueueApp:v2";
+    const QUEUE_ID = "clinic1";
+
+    /******************************************************************
+     * STATE
+     ******************************************************************/
+    let state = {
+      apiBase: DEFAULT_API_BASE,
+      theme: "dark",
+      user: { phoneNumber: "", tokenNumber: null },
+      admin: { callingToken: null, refreshMs: 5000, timer: null }
+    };
+
+    /******************************************************************
+     * DOM
+     ******************************************************************/
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      netState: $("netState"),
+      themeBtn: $("themeBtn"),
+      tabUser: $("tabUser"),
+      tabAdmin: $("tabAdmin"),
+      userPanel: $("userPanel"),
+      adminPanel: $("adminPanel"),
+      
+      userPhone: $("userPhone"),
+      btnGetToken: $("btnGetToken"),
+      btnUserRefresh: $("btnUserRefresh"),
+      btnCopyToken: $("btnCopyToken"),
+      userTokenNo: $("userTokenNo"),
+      userBadge: $("userBadge"),
+      userPosition: $("userPosition"),
+      pendingCount: $("pendingCount"),
+      
+      adminRefreshRate: $("adminRefreshRate"),
+      callingToken: $("callingToken"),
+      callingBadge: $("callingBadge"),
+      nextPending: $("nextPending"),
+      adminUpdated: $("adminUpdated"),
+      btnCallNext: $("btnCallNext"),
+      btnMarkServed: $("btnMarkServed"),
+      btnAdminRefresh: $("btnAdminRefresh"),
+      pendingList: $("pendingList"),
+      adminPendingBadge: $("adminPendingBadge"),
+      
+      manualToken: $("manualToken"),
+      manualStatus: $("manualStatus"),
+      btnManualUpdate: $("btnManualUpdate"),
+      
+      statPending: $("statPending"),
+      statWait: $("statWait"),
+      apiBaseInput: $("apiBaseInput"),
+      btnSaveApi: $("btnSaveApi"),
+      toastWrap: $("toastWrap")
+    };
+
+    /******************************************************************
+     * UTIL
+     ******************************************************************/
+    function setTheme(theme){
+      state.theme = theme;
+      document.documentElement.setAttribute("data-theme", theme);
+      saveState();
+    }
+
+    function toast(msg, kind="info", ttl=4200){
+      const t = document.createElement("div");
+      t.className = "toast";
+      const dot = document.createElement("div");
+      dot.className = "dot " + (kind || "info");
+      const body = document.createElement("div");
+      body.innerHTML = `<div style="font-weight:900;margin-bottom:3px">${escapeHtml(kind.toUpperCase())}</div>
+                        <div style="color:var(--muted);font-size:13px;">${escapeHtml(msg)}</div>`;
+      t.appendChild(dot);
+      t.appendChild(body);
+      els.toastWrap.appendChild(t);
+      setTimeout(()=>{ t.style.opacity="0"; t.style.transform="translateY(6px)"; }, ttl - 250);
+      setTimeout(()=>{ t.remove(); }, ttl);
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+
+    function nowTime(){
+      return new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+
+    function loadState(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+          const parsed = JSON.parse(raw);
+          state = {...state, ...parsed, user:{...state.user, ...(parsed.user||{})}, admin:{...state.admin, ...(parsed.admin||{})}};
+        }
+      }catch(e){}
+    }
+
+    function saveState(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        apiBase: state.apiBase,
+        theme: state.theme,
+        user: state.user,
+        admin: {callingToken: state.admin.callingToken, refreshMs: state.admin.refreshMs}
+      }));
+    }
+
+    function applyStateToUI(){
+      els.apiBaseInput.value = state.apiBase;
+      els.userPhone.value = state.user.phoneNumber || "";
+      els.adminRefreshRate.value = String(state.admin.refreshMs || 0);
+      setUserTokenUI(state.user.tokenNumber, "PENDING");
+      setAdminCallingUI(state.admin.callingToken);
+      setTheme(state.theme || "dark");
+    }
+
+    function setUserTokenUI(token, status){
+      els.userTokenNo.textContent = token ? `#${token}` : "—";
+      const st = (status || "PENDING").toUpperCase();
+      els.userBadge.textContent = st;
+      els.userBadge.className = "badge " + (
+        st === "SERVED" ? "good" :
+        st === "CALLING" ? "info pulse" : "warn"
+      );
+    }
+
+    function setAdminCallingUI(token){
+      els.callingToken.textContent = token ? `#${token}` : "—";
+      els.callingBadge.textContent = token ? "CALLING" : "IDLE";
+      els.callingBadge.className = "badge " + (token ? "info pulse" : "warn");
+    }
+
+    function setNetworkUI(){
+      const online = navigator.onLine;
+      els.netState.textContent = online ? "Online" : "Offline";
+      if(!online) toast("Network offline. API calls will fail.", "bad", 5000);
+    }
+
+    /******************************************************************
+     * API
+     ******************************************************************/
+    async function apiFetch(path, { method="GET", body=null, query=null } = {}){
+      const base = state.apiBase.replace(/\/+$/,"");
+      let url = base + path;
+      if(query){
+        const qs = new URLSearchParams();
+        Object.entries(query).forEach(([k,v]) => qs.set(k, v));
+        url += "?" + qs.toString();
+      }
+      const opts = { method, headers: {} };
+      if(body !== null){
+        opts.headers["Content-Type"] = "application/json";
+        opts.body = JSON.stringify(body);
+      }
+      const res = await fetch(url, opts);
+      const txt = await res.text();
+      let parsed = null;
+      try { parsed = JSON.parse(txt); } catch { parsed = { raw: txt }; }
+      if(parsed && typeof parsed === "object" && typeof parsed.body === "string"){
+        try { parsed.body = JSON.parse(parsed.body); } catch {}
+      }
+      return { ok: res.ok, status: res.status, data: parsed };
+    }
+
+    async function fetchQueue(){
+      const r = await apiFetch("/queue", { method:"GET", query:{ queueId: QUEUE_ID } });
+      if(!r.ok){
+        toast(`Queue fetch failed (${r.status}).`, "bad");
+        return null;
+      }
+      return r.data?.body || r.data;
+    }
+
+    /******************************************************************
+     * USER PANEL
+     ******************************************************************/
+    async function userGetToken(){
+      const phone = (els.userPhone.value || "").trim();
+      if(!phone || !phone.startsWith("+")){
+        toast("Enter valid E.164 phone number (e.g., +919876543210).", "bad");
+        return;
+      }
+      state.user.phoneNumber = phone;
+      saveState();
+
+      toast("Creating token...", "info", 2200);
+      const r = await apiFetch("/token", { method:"POST", body:{ queueId: QUEUE_ID, phoneNumber: phone }});
+      if(!r.ok){
+        toast(`Token creation failed (${r.status}).`, "bad");
+        return;
+      }
+      const payload = r.data?.body || r.data;
+      const token = payload?.token || null;
+      if(!token){
+        toast("Token created but no number returned.", "warn");
+      } else {
+        state.user.tokenNumber = String(token);
+        saveState();
+        setUserTokenUI(state.user.tokenNumber, "PENDING");
+        toast(`Token #${token} created! Check SMS (if verified).`, "good", 5000);
+      }
+      await userRefresh();
+    }
+
+    async function userRefresh(){
+      const queue = await fetchQueue();
+      if(!queue) return;
+      
+      els.pendingCount.textContent = String(queue.pendingCount ?? 0);
+      els.statPending.textContent = String(queue.pendingCount ?? 0);
+      els.statWait.textContent = `${(queue.pendingCount || 0) * 5} min`;
+
+      const token = state.user.tokenNumber;
+      if(!token){ els.userPosition.textContent = "—"; return; }
+
+      const tokens = Array.isArray(queue.tokens) ? queue.tokens : [];
+      tokens.sort((a,b)=> Number(a.tokenNumber||0) - Number(b.tokenNumber||0));
+      const idx = tokens.findIndex(t => String(t.tokenNumber) === String(token));
+      if(idx >= 0){
+        els.userPosition.textContent = String(idx + 1);
+        setUserTokenUI(token, idx === 0 ? "CALLING" : "PENDING");
+        if(idx === 0) toast(`Token #${token} is next! Please be ready.`, "warn", 3000);
+      } else {
+        els.userPosition.textContent = "—";
+        setUserTokenUI(token, "SERVED");
+      }
+    }
+
+    /******************************************************************
+     * ADMIN PANEL
+     ******************************************************************/
+    async function adminRefresh(){
+      const queue = await fetchQueue();
+      if(!queue) return;
+      
+      els.adminUpdated.textContent = nowTime();
+      els.adminPendingBadge.textContent = String(queue.pendingCount ?? 0);
+      els.statPending.textContent = String(queue.pendingCount ?? 0);
+      els.statWait.textContent = `${(queue.pendingCount || 0) * 5} min`;
+
+      // 1. UPDATE "CURRENTLY CALLING" UI
+      const calling = queue.callingToken;
+      if(calling && calling.tokenNumber){
+        state.admin.callingToken = calling.tokenNumber;
+        saveState();
+        setAdminCallingUI(calling.tokenNumber);
+      } else {
+        // If API says nothing is calling, clear UI
+        state.admin.callingToken = null;
+        saveState();
+        setAdminCallingUI(null);
+      }
+
+      // 2. RENDER PENDING LIST
+      const tokens = Array.isArray(queue.tokens) ? queue.tokens : [];
+      tokens.sort((a,b)=> Number(a.tokenNumber||0) - Number(b.tokenNumber||0));
+      els.nextPending.textContent = tokens.length > 0 ? `#${tokens[0].tokenNumber}` : "—";
+
+      if(tokens.length === 0){
+        els.pendingList.innerHTML = `<div class="muted" style="text-align:center;padding:20px;">No pending tokens.</div>`;
+        return;
+      }
+
+      const html = tokens.map(t => {
+        const n = t.tokenNumber ?? "—";
+        const ph = t.phoneNumber ? String(t.phoneNumber) : "—";
+        const st = (t.status || "PENDING").toUpperCase();
+        const badge = st === "PENDING" ? "warn" : (st === "CALLING" ? "info" : "good");
+        return `
+          <div class="item">
+            <div class="left">
+              <div class="t mono">#${escapeHtml(n)}</div>
+              <div class="s mono">${escapeHtml(ph)}</div>
+            </div>
+            <div class="right">
+              <span class="badge ${badge}">${escapeHtml(st)}</span>
+              <button class="btn" style="padding:9px 12px;" data-act="call" data-token="${escapeHtml(n)}">📢 Call</button>
+              <button class="btn good" style="padding:9px 12px;" data-act="serve" data-token="${escapeHtml(n)}">✅ Served</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      els.pendingList.innerHTML = html;
+      
+      // Re-attach event listeners to new buttons
+      [...els.pendingList.querySelectorAll("button[data-act]")].forEach(btn=>{
+        btn.addEventListener("click", async ()=>{
+          const act = btn.getAttribute("data-act");
+          const token = btn.getAttribute("data-token");
+          if(act === "call") await adminUpdate(token, "CALLING");
+          if(act === "serve") await adminUpdate(token, "SERVED");
+          await adminRefresh();
+        });
+      });
+    }
+
+    async function adminUpdate(tokenNumber, status){
+      const token = String(tokenNumber || "").trim();
+      if(!token || token === "null" || token === "undefined"){
+        toast("Invalid token number.", "bad");
+        console.error("Attempted update with invalid token:", tokenNumber);
+        return false;
+      }
+      // Debug log (Check Console)
+      console.log("Sending update:", { queueId: QUEUE_ID, tokenNumber: token, status });
+      
+      const r = await apiFetch("/update", { method:"POST", body:{ queueId: QUEUE_ID, tokenNumber: token, status:status }});
+      if(!r.ok){
+        toast(`Update failed (${r.status}).`, "bad");
+        return false;
+      }
+      if(status === "CALLING"){
+        state.admin.callingToken = token;
+        saveState();
+        setAdminCallingUI(token);
+        beep();
+      }
+      if(status === "SERVED" && state.admin.callingToken === token){
+        state.admin.callingToken = null;
+        saveState();
+        setAdminCallingUI(null);
+      }
+      toast(`Token #${token} → ${status}`, "good", 2600);
+      return true;
+    }
+
+    async function adminCallNext(){
+    toast("Loading queue...", "info", 1500);
+    
+    const queue = await fetchQueue();
+    if(!queue){
+        toast("Failed to fetch queue.", "bad");
+        return;
+    }
+    
+    console.log("Queue response:", queue); // DEBUG
+    
+    const tokens = Array.isArray(queue.tokens) ? queue.tokens : [];
+    console.log("Tokens array:", tokens); // DEBUG
+    
+    if(tokens.length === 0){
+        toast("No pending tokens to call.", "warn");
+        return;
+    }
+    
+    // Sort numerically
+    tokens.sort((a,b)=> Number(a.tokenNumber||0) - Number(b.tokenNumber||0));
+    
+    const nextToken = tokens[0];
+    console.log("Next token object:", nextToken); // DEBUG
+    
+    const tokenNum = String(nextToken.tokenNumber || "").trim();
+    console.log("Extracted token number:", tokenNum); // DEBUG
+    
+    if(!tokenNum){
+        toast("Invalid token number from API.", "bad");
+        return;
+    }
+    
+    await adminUpdate(tokenNum, "CALLING");
+    await adminRefresh();
+    }
+
+
+    async function adminMarkServed(){
+    // 1. Try to get token from state
+    let tok = state.admin.callingToken;
+    
+    // 2. If state empty, try to fetch from API
+    if(!tok){
+        const queue = await fetchQueue();
+        if(queue && queue.callingToken){
+        tok = queue.callingToken.tokenNumber;
+        }
+    }
+
+    // 3. Validation
+    if(!tok){
+        toast("No calling token found.", "warn");
+        return;
+    }
+    
+    console.log("Marking served:", tok); // DEBUG
+    
+    await adminUpdate(tok, "SERVED");
+    await adminRefresh();
+    }
+
+
+    function beep(){
+      try{
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(880, ctx.currentTime);
+        g.gain.setValueAtTime(0.05, ctx.currentTime);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(); o.stop(ctx.currentTime + 0.12);
+      } catch(e){}
+    }
+
+    function adminStartTimer(){
+      adminStopTimer();
+      const ms = Number(els.adminRefreshRate.value || 0);
+      state.admin.refreshMs = ms;
+      saveState();
+      if(ms > 0){
+        state.admin.timer = setInterval(adminRefresh, ms);
+      }
+    }
+
+    function adminStopTimer(){
+      if(state.admin.timer){
+        clearInterval(state.admin.timer);
+        state.admin.timer = null;
+      }
+    }
+
+    /******************************************************************
+     * UI WIRING
+     ******************************************************************/
+    function switchTab(which){
+      const isUser = which === "user";
+      els.userPanel.style.display = isUser ? "block" : "none";
+      els.adminPanel.style.display = isUser ? "none" : "block";
+      els.tabUser.classList.toggle("active", isUser);
+      els.tabAdmin.classList.toggle("active", !isUser);
+      if(!isUser){ adminStartTimer(); adminRefresh(); }
+      else { adminStopTimer(); }
+    }
+
+    /******************************************************************
+     * INIT
+     ******************************************************************/
+    loadState();
+    applyStateToUI();
+    setNetworkUI();
+
+    window.addEventListener("online", setNetworkUI);
+    window.addEventListener("offline", setNetworkUI);
+
+    els.tabUser.addEventListener("click", ()=> switchTab("user"));
+    els.tabAdmin.addEventListener("click", ()=> switchTab("admin"));
+
+    els.btnGetToken.addEventListener("click", userGetToken);
+    els.btnUserRefresh.addEventListener("click", userRefresh);
+    els.btnCopyToken.addEventListener("click", async ()=>{
+      const token = state.user.tokenNumber ? `#${state.user.tokenNumber}` : "";
+      if(!token){ toast("No token to copy.", "warn"); return; }
+      try{
+        await navigator.clipboard.writeText(token);
+        toast("Token copied to clipboard.", "good");
+      } catch { toast("Clipboard unavailable.", "warn"); }
+    });
+
+    els.btnAdminRefresh.addEventListener("click", adminRefresh);
+    els.btnCallNext.addEventListener("click", adminCallNext);
+    els.btnMarkServed.addEventListener("click", adminMarkServed);
+
+    els.btnManualUpdate.addEventListener("click", async ()=>{
+      const token = (els.manualToken.value || "").trim();
+      const status = els.manualStatus.value;
+      await adminUpdate(token, status);
+      await adminRefresh();
+    });
+
+    els.adminRefreshRate.addEventListener("change", adminStartTimer);
+
+    els.btnSaveApi.addEventListener("click", ()=>{
+      const base = (els.apiBaseInput.value || "").trim();
+      if(!base.startsWith("http")){
+        toast("API base must start with https://", "bad");
+        return;
+      }
+      state.apiBase = base.replace(/\/+$/,"");
+      saveState();
+      toast("API URL saved.", "good");
+    });
+
+    els.themeBtn.addEventListener("click", ()=>{
+      setTheme(state.theme === "dark" ? "light" : "dark");
+      toast(`Theme: ${state.theme}`, "info");
+    });
+
+    els.userPhone.addEventListener("input", ()=>{ state.user.phoneNumber = els.userPhone.value.trim(); saveState(); });
+
+    if(state.user.tokenNumber){ userRefresh(); }
+
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter" && els.userPanel.style.display !== "none"){
+        userGetToken();
+      }
+    });
+  </script>
+</body>
+</html>
