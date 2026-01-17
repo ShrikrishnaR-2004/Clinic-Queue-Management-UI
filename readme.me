@@ -1,0 +1,72 @@
+🏷️ Smart Queue Management System using AWS IoT
+A real-time, cloud-based digital queue management system designed for clinics, banks, and customer service centers.
+The system enables users to take tokens remotely, track live queue status, and receive notifications when their turn is approaching.
+This project showcases AWS cloud architecture, IoT-based real-time communication, and scalable backend design.
+📌 Problem Statement
+Traditional queue systems require physical presence, leading to:
+Long waiting times
+Overcrowding
+Poor user experience
+This project solves the problem by enabling remote token management and real-time queue monitoring.
+🚀 Key Features
+👤 User Features
+Take a digital token via web interface
+View live queue status
+See “Now Serving” token number
+Get estimated waiting time
+Cancel token if needed
+Receive SMS alerts when their turn is near
+🛠️ Admin / Staff Features
+Mark tokens as served or skipped
+Monitor live queue progression
+View session logs for analytics
+🏗️ System Architecture
+AWS Services Used
+AWS IoT Core
+Simulates queue devices (token machine / kiosk)
+Enables real-time communication using MQTT
+AWS Lambda
+Handles token creation
+Updates token status
+Manages queue flow
+Amazon DynamoDB
+Stores queue data:
+queue_id
+token_number
+timestamp
+status
+estimated_wait_time
+AWS SNS
+Sends SMS notifications to users when their token is approaching
+Frontend (Web Application)
+Live updates via MQTT
+Separate user and admin views
+🔄 Real-Time Communication
+Uses MQTT protocol through AWS IoT Core
+Push-based updates (no page refresh required)
+Displays live queue status and “Now Serving” number
+🛠️ Tech Stack
+AWS IoT Core
+AWS Lambda
+Amazon DynamoDB
+AWS SNS
+MQTT Protocol
+Python
+JavaScript / HTML / CSS
+📦 Deliverables
+✅ Real-time queue management web application
+✅ IoT device simulator (Python-based)
+✅ AWS architecture diagram with message flow
+✅ Documentation covering challenges and scalability
+📈 Scalability & Future Enhancements
+Support for multiple queues & locations
+Mobile app integration
+Advanced analytics dashboard
+AI-based wait time prediction
+🧠 Learning Outcomes
+Designed event-driven AWS architecture
+Implemented real-time systems using MQTT
+Hands-on experience with IoT + serverless
+Built scalable, production-style cloud solution
+📄 License
+This project is for learning and demonstration purposes.
